@@ -290,7 +290,7 @@ lunr.tokenizer.registerFunction = function (fn, label) {
  *
  * @constructor
  */
-lunr.Pipeline = function () {
+lunr.Pipeline = function() {
   this._stack = []
 }
 
@@ -309,7 +309,7 @@ lunr.Pipeline.registeredFunctions = {}
  * @param {String} label The label to register this function with
  * @memberOf Pipeline
  */
-lunr.Pipeline.registerFunction = function (fn, label) {
+lunr.Pipeline.registerFunction = function(fn, label) {
   if (label in this.registeredFunctions) {
     lunr.utils.warn('Overwriting existing registered function: ' + label)
   }
@@ -325,7 +325,7 @@ lunr.Pipeline.registerFunction = function (fn, label) {
  * @private
  * @memberOf Pipeline
  */
-lunr.Pipeline.warnIfFunctionNotRegistered = function (fn) {
+lunr.Pipeline.warnIfFunctionNotRegistered = function(fn) {
   var isRegistered = fn.label && (fn.label in this.registeredFunctions)
 
   if (!isRegistered) {
@@ -344,10 +344,10 @@ lunr.Pipeline.warnIfFunctionNotRegistered = function (fn) {
  * @returns {lunr.Pipeline}
  * @memberOf Pipeline
  */
-lunr.Pipeline.load = function (serialised) {
+lunr.Pipeline.load = function(serialised) {
   var pipeline = new lunr.Pipeline
 
-  serialised.forEach(function (fnName) {
+  serialised.forEach(function(fnName) {
     var fn = lunr.Pipeline.registeredFunctions[fnName]
 
     if (fn) {
@@ -368,10 +368,10 @@ lunr.Pipeline.load = function (serialised) {
  * @param {Function} functions Any number of functions to add to the pipeline.
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.add = function () {
+lunr.Pipeline.prototype.add = function() {
   var fns = Array.prototype.slice.call(arguments)
 
-  fns.forEach(function (fn) {
+  fns.forEach(function(fn) {
     lunr.Pipeline.warnIfFunctionNotRegistered(fn)
     this._stack.push(fn)
   }, this)
@@ -387,7 +387,7 @@ lunr.Pipeline.prototype.add = function () {
  * @param {Function} newFn The new function to add to the pipeline.
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.after = function (existingFn, newFn) {
+lunr.Pipeline.prototype.after = function(existingFn, newFn) {
   lunr.Pipeline.warnIfFunctionNotRegistered(newFn)
 
   var pos = this._stack.indexOf(existingFn)
@@ -409,7 +409,7 @@ lunr.Pipeline.prototype.after = function (existingFn, newFn) {
  * @param {Function} newFn The new function to add to the pipeline.
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.before = function (existingFn, newFn) {
+lunr.Pipeline.prototype.before = function(existingFn, newFn) {
   lunr.Pipeline.warnIfFunctionNotRegistered(newFn)
 
   var pos = this._stack.indexOf(existingFn)
@@ -426,7 +426,7 @@ lunr.Pipeline.prototype.before = function (existingFn, newFn) {
  * @param {Function} fn The function to remove from the pipeline.
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.remove = function (fn) {
+lunr.Pipeline.prototype.remove = function(fn) {
   var pos = this._stack.indexOf(fn)
   if (pos == -1) {
     return
@@ -440,19 +440,21 @@ lunr.Pipeline.prototype.remove = function (fn) {
  * passed tokens.
  *
  * @param {Array} tokens The tokens to run through the pipeline.
+ * @param {String} language (Optional) The language of the tokens.
  * @returns {Array}
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.run = function (tokens) {
+lunr.Pipeline.prototype.run = function(tokens, language) {
   var out = [],
-      tokenLength = tokens.length,
-      stackLength = this._stack.length
+    tokenLength = tokens.length,
+    stackLength = this._stack.length,
+    language = language || en
 
   for (var i = 0; i < tokenLength; i++) {
     var token = tokens[i]
 
     for (var j = 0; j < stackLength; j++) {
-      token = this._stack[j](token, i, tokens)
+      token = this._stack[j](token, i, tokens, language)
       if (token === void 0 || token === '') break
     };
 
@@ -467,7 +469,7 @@ lunr.Pipeline.prototype.run = function (tokens) {
  *
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.reset = function () {
+lunr.Pipeline.prototype.reset = function() {
   this._stack = []
 }
 
@@ -479,8 +481,8 @@ lunr.Pipeline.prototype.reset = function () {
  * @returns {Array}
  * @memberOf Pipeline
  */
-lunr.Pipeline.prototype.toJSON = function () {
-  return this._stack.map(function (fn) {
+lunr.Pipeline.prototype.toJSON = function() {
+  return this._stack.map(function(fn) {
     lunr.Pipeline.warnIfFunctionNotRegistered(fn)
 
     return fn.label
@@ -871,19 +873,20 @@ lunr.SortedSet.prototype.toJSON = function () {
  *
  * @constructor
  */
-lunr.Index = function () {
+lunr.Index = function() {
   this._fields = []
   this._ref = 'id'
+  this._language = 'en'
   this.pipeline = new lunr.Pipeline
   this.documentStore = new lunr.Store
   this.tokenStore = new lunr.TokenStore
   this.corpusTokens = new lunr.SortedSet
-  this.eventEmitter =  new lunr.EventEmitter
+  this.eventEmitter = new lunr.EventEmitter
   this.tokenizerFn = lunr.tokenizer
 
   this._idfCache = {}
 
-  this.on('add', 'remove', 'update', (function () {
+  this.on('add', 'remove', 'update', (function() {
     this._idfCache = {}
   }).bind(this))
 }
@@ -897,7 +900,7 @@ lunr.Index = function () {
  * @param {Function} fn The serialised set to load.
  * @memberOf Index
  */
-lunr.Index.prototype.on = function () {
+lunr.Index.prototype.on = function() {
   var args = Array.prototype.slice.call(arguments)
   return this.eventEmitter.addListener.apply(this.eventEmitter, args)
 }
@@ -909,7 +912,7 @@ lunr.Index.prototype.on = function () {
  * @param {Function} fn The serialised set to load.
  * @memberOf Index
  */
-lunr.Index.prototype.off = function (name, fn) {
+lunr.Index.prototype.off = function(name, fn) {
   return this.eventEmitter.removeListener(name, fn)
 }
 
@@ -923,7 +926,7 @@ lunr.Index.prototype.off = function (name, fn) {
  * @returns {lunr.Index}
  * @memberOf Index
  */
-lunr.Index.load = function (serialisedData) {
+lunr.Index.load = function(serialisedData) {
   if (serialisedData.version !== lunr.version) {
     lunr.utils.warn('version mismatch: current ' + lunr.version + ' importing ' + serialisedData.version)
   }
@@ -960,9 +963,12 @@ lunr.Index.load = function (serialisedData) {
  * @returns {lunr.Index}
  * @memberOf Index
  */
-lunr.Index.prototype.field = function (fieldName, opts) {
+lunr.Index.prototype.field = function(fieldName, opts) {
   var opts = opts || {},
-      field = { name: fieldName, boost: opts.boost || 1 }
+    field = {
+      name: fieldName,
+      boost: opts.boost || 1
+    }
 
   this._fields.push(field)
   return this
@@ -984,8 +990,25 @@ lunr.Index.prototype.field = function (fieldName, opts) {
  * @returns {lunr.Index}
  * @memberOf Index
  */
-lunr.Index.prototype.ref = function (refName) {
+lunr.Index.prototype.ref = function(refName) {
   this._ref = refName
+  return this
+}
+
+/**
+ * Set the language used to analyse the texts included in the document.
+ *
+ * This variable defines which stemmer and stop word algorithms will be used.
+ *
+ * Current supported values are 'en', 'fr' and 'de'. If the value is unsupported,
+ * fallback language is 'en'.
+ * 
+ * @param  {String} language Language used in this lunr instance.
+ * @returns {lunr.Index}
+ * @memberOf Index
+ */
+lunr.Index.prototype.language = function(language) {
+  this._language = ['en', 'fr', 'de'].indexOf(language) ? language : 'en'
   return this
 }
 
@@ -1000,7 +1023,7 @@ lunr.Index.prototype.ref = function (refName) {
  * @returns {lunr.Index}
  * @memberOf Index
  */
-lunr.Index.prototype.tokenizer = function (fn) {
+lunr.Index.prototype.tokenizer = function(fn) {
   var isRegistered = fn.label && (fn.label in lunr.tokenizer.registeredFunctions)
 
   if (!isRegistered) {
@@ -1026,14 +1049,14 @@ lunr.Index.prototype.tokenizer = function (fn) {
  * @param {Boolean} emitEvent Whether or not to emit events, default true.
  * @memberOf Index
  */
-lunr.Index.prototype.add = function (doc, emitEvent) {
+lunr.Index.prototype.add = function(doc, emitEvent) {
   var docTokens = {},
-      allDocumentTokens = new lunr.SortedSet,
-      docRef = doc[this._ref],
-      emitEvent = emitEvent === undefined ? true : emitEvent
+    allDocumentTokens = new lunr.SortedSet,
+    docRef = doc[this._ref],
+    emitEvent = emitEvent === undefined ? true : emitEvent
 
-  this._fields.forEach(function (field) {
-    var fieldTokens = this.pipeline.run(this.tokenizerFn(doc[field.name]))
+  this._fields.forEach(function(field) {
+    var fieldTokens = this.pipeline.run(this.tokenizerFn(doc[field.name]), this._language)
 
     docTokens[field.name] = fieldTokens
 
@@ -1050,7 +1073,7 @@ lunr.Index.prototype.add = function (doc, emitEvent) {
     var token = allDocumentTokens.elements[i]
     var tf = 0;
 
-    for (var j = 0; j < this._fields.length; j++){
+    for (var j = 0; j < this._fields.length; j++) {
       var field = this._fields[j]
       var fieldTokens = docTokens[field.name]
       var fieldLength = fieldTokens.length
@@ -1058,8 +1081,8 @@ lunr.Index.prototype.add = function (doc, emitEvent) {
       if (!fieldLength) continue
 
       var tokenCount = 0
-      for (var k = 0; k < fieldLength; k++){
-        if (fieldTokens[k] === token){
+      for (var k = 0; k < fieldLength; k++) {
+        if (fieldTokens[k] === token) {
           tokenCount++
         }
       }
@@ -1067,7 +1090,10 @@ lunr.Index.prototype.add = function (doc, emitEvent) {
       tf += (tokenCount / fieldLength * field.boost)
     }
 
-    this.tokenStore.add(token, { ref: docRef, tf: tf })
+    this.tokenStore.add(token, {
+      ref: docRef,
+      tf: tf
+    })
   };
 
   if (emitEvent) this.eventEmitter.emit('add', doc, this)
@@ -1091,9 +1117,9 @@ lunr.Index.prototype.add = function (doc, emitEvent) {
  * @param {Boolean} emitEvent Whether to emit remove events, defaults to true
  * @memberOf Index
  */
-lunr.Index.prototype.remove = function (doc, emitEvent) {
+lunr.Index.prototype.remove = function(doc, emitEvent) {
   var docRef = doc[this._ref],
-      emitEvent = emitEvent === undefined ? true : emitEvent
+    emitEvent = emitEvent === undefined ? true : emitEvent
 
   if (!this.documentStore.has(docRef)) return
 
@@ -1101,7 +1127,7 @@ lunr.Index.prototype.remove = function (doc, emitEvent) {
 
   this.documentStore.remove(docRef)
 
-  docTokens.forEach(function (token) {
+  docTokens.forEach(function(token) {
     this.tokenStore.remove(token, docRef)
   }, this)
 
@@ -1128,7 +1154,7 @@ lunr.Index.prototype.remove = function (doc, emitEvent) {
  * @see Index.prototype.add
  * @memberOf Index
  */
-lunr.Index.prototype.update = function (doc, emitEvent) {
+lunr.Index.prototype.update = function(doc, emitEvent) {
   var emitEvent = emitEvent === undefined ? true : emitEvent
 
   this.remove(doc, false)
@@ -1145,12 +1171,12 @@ lunr.Index.prototype.update = function (doc, emitEvent) {
  * @private
  * @memberOf Index
  */
-lunr.Index.prototype.idf = function (term) {
+lunr.Index.prototype.idf = function(term) {
   var cacheKey = "@" + term
   if (Object.prototype.hasOwnProperty.call(this._idfCache, cacheKey)) return this._idfCache[cacheKey]
 
   var documentFrequency = this.tokenStore.count(term),
-      idf = 1
+    idf = 1
 
   if (documentFrequency > 0) {
     idf = 1 + Math.log(this.documentStore.length / documentFrequency)
@@ -1183,28 +1209,30 @@ lunr.Index.prototype.idf = function (term) {
  * @see Index.prototype.documentVector
  * @memberOf Index
  */
-lunr.Index.prototype.search = function (query) {
-  var queryTokens = this.pipeline.run(this.tokenizerFn(query)),
-      queryVector = new lunr.Vector,
-      documentSets = [],
-      fieldBoosts = this._fields.reduce(function (memo, f) { return memo + f.boost }, 0)
+lunr.Index.prototype.search = function(query) {
+  var queryTokens = this.pipeline.run(this.tokenizerFn(query), this._language),
+    queryVector = new lunr.Vector,
+    documentSets = [],
+    fieldBoosts = this._fields.reduce(function(memo, f) {
+      return memo + f.boost
+    }, 0)
 
-  var hasSomeToken = queryTokens.some(function (token) {
+  var hasSomeToken = queryTokens.some(function(token) {
     return this.tokenStore.has(token)
   }, this)
 
   if (!hasSomeToken) return []
 
   queryTokens
-    .forEach(function (token, i, tokens) {
+    .forEach(function(token, i, tokens) {
       var tf = 1 / tokens.length * this._fields.length * fieldBoosts,
-          self = this
+        self = this
 
-      var set = this.tokenStore.expand(token).reduce(function (memo, key) {
+      var set = this.tokenStore.expand(token).reduce(function(memo, key) {
         var pos = self.corpusTokens.indexOf(key),
-            idf = self.idf(key),
-            similarityBoost = 1,
-            set = new lunr.SortedSet
+          idf = self.idf(key),
+          similarityBoost = 1,
+          set = new lunr.SortedSet
 
         // if the expanded key is not an exact match to the token then
         // penalise the score for this key by how different the key is
@@ -1222,8 +1250,8 @@ lunr.Index.prototype.search = function (query) {
         // add all the documents that have this key into a set
         // ensuring that the type of key is preserved
         var matchingDocuments = self.tokenStore.get(key),
-            refs = Object.keys(matchingDocuments),
-            refsLen = refs.length
+          refs = Object.keys(matchingDocuments),
+          refsLen = refs.length
 
         for (var i = 0; i < refsLen; i++) {
           set.add(matchingDocuments[refs[i]].ref)
@@ -1235,15 +1263,18 @@ lunr.Index.prototype.search = function (query) {
       documentSets.push(set)
     }, this)
 
-  var documentSet = documentSets.reduce(function (memo, set) {
+  var documentSet = documentSets.reduce(function(memo, set) {
     return memo.intersect(set)
   })
 
   return documentSet
-    .map(function (ref) {
-      return { ref: ref, score: queryVector.similarity(this.documentVector(ref)) }
+    .map(function(ref) {
+      return {
+        ref: ref,
+        score: queryVector.similarity(this.documentVector(ref))
+      }
     }, this)
-    .sort(function (a, b) {
+    .sort(function(a, b) {
       return b.score - a.score
     })
 }
@@ -1262,15 +1293,15 @@ lunr.Index.prototype.search = function (query) {
  * @private
  * @memberOf Index
  */
-lunr.Index.prototype.documentVector = function (documentRef) {
+lunr.Index.prototype.documentVector = function(documentRef) {
   var documentTokens = this.documentStore.get(documentRef),
-      documentTokensLength = documentTokens.length,
-      documentVector = new lunr.Vector
+    documentTokensLength = documentTokens.length,
+    documentVector = new lunr.Vector
 
   for (var i = 0; i < documentTokensLength; i++) {
     var token = documentTokens.elements[i],
-        tf = this.tokenStore.get(token)[documentRef].tf,
-        idf = this.idf(token)
+      tf = this.tokenStore.get(token)[documentRef].tf,
+      idf = this.idf(token)
 
     documentVector.insert(this.corpusTokens.indexOf(token), tf * idf)
   };
@@ -1284,7 +1315,7 @@ lunr.Index.prototype.documentVector = function (documentRef) {
  * @returns {Object}
  * @memberOf Index
  */
-lunr.Index.prototype.toJSON = function () {
+lunr.Index.prototype.toJSON = function() {
   return {
     version: lunr.version,
     fields: this._fields,
@@ -1323,7 +1354,7 @@ lunr.Index.prototype.toJSON = function () {
  * @param {Function} plugin The plugin to apply.
  * @memberOf Index
  */
-lunr.Index.prototype.use = function (plugin) {
+lunr.Index.prototype.use = function(plugin) {
   var args = Array.prototype.slice.call(arguments, 1)
   args.unshift(this)
   plugin.apply(this, args)
@@ -1431,217 +1462,507 @@ lunr.Store.prototype.toJSON = function () {
  */
 
 /**
- * lunr.stemmer is an english language stemmer, this is a JavaScript
- * implementation of the PorterStemmer taken from http://tartarus.org/~martin
+ * lunr.stemmerEn is an english language stemmer, a Javascript Porter algorithm implementation
+ * taken from https://github.com/zyklus/stem/
  *
  * @module
- * @param {String} str The string to stem
- * @returns {String}
+ * @param {String} the word to stem
+ * @return {String} the stemmed word
  * @see lunr.Pipeline
  */
-lunr.stemmer = (function(){
-  var step2list = {
-      "ational" : "ate",
-      "tional" : "tion",
-      "enci" : "ence",
-      "anci" : "ance",
-      "izer" : "ize",
-      "bli" : "ble",
-      "alli" : "al",
-      "entli" : "ent",
-      "eli" : "e",
-      "ousli" : "ous",
-      "ization" : "ize",
-      "ation" : "ate",
-      "ator" : "ate",
-      "alism" : "al",
-      "iveness" : "ive",
-      "fulness" : "ful",
-      "ousness" : "ous",
-      "aliti" : "al",
-      "iviti" : "ive",
-      "biliti" : "ble",
-      "logi" : "log"
-    },
+lunr.stemmerEn = (function() {
+	var exceptions = {
+			skis: 'ski',
+			skies: 'sky',
+			dying: 'die',
+			lying: 'lie',
+			tying: 'tie',
+			idly: 'idl',
+			gently: 'gentl',
+			ugly: 'ugli',
+			early: 'earli',
+			only: 'onli',
+			singly: 'singl',
+			sky: 'sky',
+			news: 'news',
+			howe: 'howe',
+			atlas: 'atlas',
+			cosmos: 'cosmos',
+			bias: 'bias',
+			andes: 'andes'
 
-    step3list = {
-      "icate" : "ic",
-      "ative" : "",
-      "alize" : "al",
-      "iciti" : "ic",
-      "ical" : "ic",
-      "ful" : "",
-      "ness" : ""
-    },
+		},
+		exceptions1a = {
+			inning: 'inning',
+			outing: 'outing',
+			canning: 'canning',
+			herring: 'herring',
+			earring: 'earring',
+			proceed: 'proceed',
+			exceed: 'exceed',
+			succeed: 'succeed'
 
-    c = "[^aeiou]",          // consonant
-    v = "[aeiouy]",          // vowel
-    C = c + "[^aeiouy]*",    // consonant sequence
-    V = v + "[aeiou]*",      // vowel sequence
+		},
+		extensions2 = {
+			ization: 'ize',
+			fulness: 'ful',
+			iveness: 'ive',
+			ational: 'ate',
+			ousness: 'ous',
+			tional: 'tion',
+			biliti: 'ble',
+			lessli: 'less',
+			entli: 'ent',
+			ation: 'ate',
+			alism: 'al',
+			aliti: 'al',
+			ousli: 'ous',
+			iviti: 'ive',
+			fulli: 'ful',
+			enci: 'ence',
+			anci: 'ance',
+			abli: 'able',
+			izer: 'ize',
+			ator: 'ate',
+			alli: 'al',
+			bli: 'ble',
+			ogi: 'og',
+			li: ''
+		};
 
-    mgr0 = "^(" + C + ")?" + V + C,               // [C]VC... is m>0
-    meq1 = "^(" + C + ")?" + V + C + "(" + V + ")?$",  // [C]VC[V] is m=1
-    mgr1 = "^(" + C + ")?" + V + C + V + C,       // [C]VCVC... is m>1
-    s_v = "^(" + C + ")?" + v;                   // vowel in stem
+	return function(word) {
+		if (word.length < 3) {
+			return word;
+		}
+		if (exceptions[word]) {
+			return exceptions[word];
+		}
 
-  var re_mgr0 = new RegExp(mgr0);
-  var re_mgr1 = new RegExp(mgr1);
-  var re_meq1 = new RegExp(meq1);
-  var re_s_v = new RegExp(s_v);
+		var eRx = ['', ''],
+			word = word.toLowerCase().replace(/^'/, '').replace(/[^a-z']/g, '').replace(/^y|([aeiouy])y/g, '$1Y'),
+			R1, res;
 
-  var re_1a = /^(.+?)(ss|i)es$/;
-  var re2_1a = /^(.+?)([^s])s$/;
-  var re_1b = /^(.+?)eed$/;
-  var re2_1b = /^(.+?)(ed|ing)$/;
-  var re_1b_2 = /.$/;
-  var re2_1b_2 = /(at|bl|iz)$/;
-  var re3_1b_2 = new RegExp("([^aeiouylsz])\\1$");
-  var re4_1b_2 = new RegExp("^" + C + v + "[^aeiouwxy]$");
+		if (res = /^(gener|commun|arsen)/.exec(word)) {
+			R1 = res[0].length;
+		} else {
+			R1 = ((/[aeiouy][^aeiouy]/.exec(' ' + word) || eRx).index || 1000) + 1;
+		}
 
-  var re_1c = /^(.+?[^aeiou])y$/;
-  var re_2 = /^(.+?)(ational|tional|enci|anci|izer|bli|alli|entli|eli|ousli|ization|ation|ator|alism|iveness|fulness|ousness|aliti|iviti|biliti|logi)$/;
+		var R2 = (((/[aeiouy][^aeiouy]/.exec(' ' + word.substr(R1)) || eRx).index || 1000)) + R1 + 1;
 
-  var re_3 = /^(.+?)(icate|ative|alize|iciti|ical|ful|ness)$/;
+		// step 0
+		word = word.replace(/('s'?|')$/, '');
 
-  var re_4 = /^(.+?)(al|ance|ence|er|ic|able|ible|ant|ement|ment|ent|ou|ism|ate|iti|ous|ive|ize)$/;
-  var re2_4 = /^(.+?)(s|t)(ion)$/;
+		// step 1a
+		rx = /(?:(ss)es|(..i)(?:ed|es)|(us)|(ss)|(.ie)(?:d|s))$/;
+		if (rx.test(word)) {
+			word = word.replace(rx, '$1$2$3$4$5');
+		} else {
+			word = word.replace(/([aeiouy].+)s$/, '$1');
+		}
 
-  var re_5 = /^(.+?)e$/;
-  var re_5_1 = /ll$/;
-  var re3_5 = new RegExp("^" + C + v + "[^aeiouwxy]$");
+		if (exceptions1a[word]) {
+			return exceptions1a[word];
+		}
 
-  var porterStemmer = function porterStemmer(w) {
-    var   stem,
-      suffix,
-      firstch,
-      re,
-      re2,
-      re3,
-      re4;
+		// step 1b
+		var s1 = (/(eedly|eed)$/.exec(word) || eRx)[1],
+			s2 = (/(?:[aeiouy].*)(ingly|edly|ing|ed)$/.exec(word) || eRx)[1];
 
-    if (w.length < 3) { return w; }
+		if (s1.length > s2.length) {
+			if (word.indexOf(s1, R1) >= 0) {
+				word = word.substr(0, word.length - s1.length) + 'ee';
+			}
+		} else if (s2.length > s1.length) {
+			word = word.substr(0, word.length - s2.length);
+			if (/(at|bl|iz)$/.test(word)) {
+				word += 'e';
+			} else if (/(bb|dd|ff|gg|mm|nn|pp|rr|tt)$/.test(word)) {
+				word = word.substr(0, word.length - 1);
+			} else if (!word.substr(R1) && /([^aeiouy][aeiouy][^aeiouywxY]|^[aeiouy][^aeiouy]|^[aeiouy])$/.test(word)) {
+				word += 'e';
+			}
+		}
 
-    firstch = w.substr(0,1);
-    if (firstch == "y") {
-      w = firstch.toUpperCase() + w.substr(1);
-    }
+		// step 1c
+		word = word.replace(/(.[^aeiouy])[yY]$/, '$1i');
 
-    // Step 1a
-    re = re_1a
-    re2 = re2_1a;
+		// step 2
+		var sfx = /(ization|fulness|iveness|ational|ousness|tional|biliti|lessli|entli|ation|alism|aliti|ousli|iviti|fulli|enci|anci|abli|izer|ator|alli|bli|l(ogi)|[cdeghkmnrt](li))$/.exec(word);
+		if (sfx) {
+			sfx = sfx[3] || sfx[2] || sfx[1];
+			if (word.indexOf(sfx, R1) >= 0) {
+				word = word.substr(0, word.length - sfx.length) + extensions2[sfx];
+			}
+		}
 
-    if (re.test(w)) { w = w.replace(re,"$1$2"); }
-    else if (re2.test(w)) { w = w.replace(re2,"$1$2"); }
+		// step 3
+		var sfx = (/(ational|tional|alize|icate|iciti|ative|ical|ness|ful)$/.exec(word) || eRx)[1];
+		if (sfx && (word.indexOf(sfx, R1) >= 0)) {
+			word = word.substr(0, word.length - sfx.length) + {
+				ational: 'ate',
+				tional: 'tion',
+				alize: 'al',
+				icate: 'ic',
+				iciti: 'ic',
+				ative: ((word.indexOf('ative', R2) >= 0) ? '' : 'ative'),
+				ical: 'ic',
+				ness: '',
+				ful: ''
+			}[sfx];
+		}
 
-    // Step 1b
-    re = re_1b;
-    re2 = re2_1b;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      re = re_mgr0;
-      if (re.test(fp[1])) {
-        re = re_1b_2;
-        w = w.replace(re,"");
-      }
-    } else if (re2.test(w)) {
-      var fp = re2.exec(w);
-      stem = fp[1];
-      re2 = re_s_v;
-      if (re2.test(stem)) {
-        w = stem;
-        re2 = re2_1b_2;
-        re3 = re3_1b_2;
-        re4 = re4_1b_2;
-        if (re2.test(w)) {  w = w + "e"; }
-        else if (re3.test(w)) { re = re_1b_2; w = w.replace(re,""); }
-        else if (re4.test(w)) { w = w + "e"; }
-      }
-    }
+		// step 4
+		var sfx = /(ement|ance|ence|able|ible|ment|ant|ent|ism|ate|iti|ous|ive|ize|[st](ion)|al|er|ic)$/.exec(word);
+		if (sfx) {
+			sfx = sfx[2] || sfx[1];
+			if (word.indexOf(sfx, R2) >= 0) {
+				word = word.substr(0, word.length - sfx.length);
+			}
+		}
 
-    // Step 1c - replace suffix y or Y by i if preceded by a non-vowel which is not the first letter of the word (so cry -> cri, by -> by, say -> say)
-    re = re_1c;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      stem = fp[1];
-      w = stem + "i";
-    }
 
-    // Step 2
-    re = re_2;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      stem = fp[1];
-      suffix = fp[2];
-      re = re_mgr0;
-      if (re.test(stem)) {
-        w = stem + step2list[suffix];
-      }
-    }
+		// step 5
+		if (word.substr(-1) == 'e') {
+			if (word.substr(R2) || (word.substr(R1) && !(/([^aeiouy][aeiouy][^aeiouywxY]|^[aeiouy][^aeiouy])e$/.test(word)))) {
+				word = word.substr(0, word.length - 1);
+			}
 
-    // Step 3
-    re = re_3;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      stem = fp[1];
-      suffix = fp[2];
-      re = re_mgr0;
-      if (re.test(stem)) {
-        w = stem + step3list[suffix];
-      }
-    }
+		} else if ((word.substr(-2) == 'll') && (word.indexOf('l', R2) >= 0)) {
+			word = word.substr(0, word.length - 1);
+		}
 
-    // Step 4
-    re = re_4;
-    re2 = re2_4;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      stem = fp[1];
-      re = re_mgr1;
-      if (re.test(stem)) {
-        w = stem;
-      }
-    } else if (re2.test(w)) {
-      var fp = re2.exec(w);
-      stem = fp[1] + fp[2];
-      re2 = re_mgr1;
-      if (re2.test(stem)) {
-        w = stem;
-      }
-    }
-
-    // Step 5
-    re = re_5;
-    if (re.test(w)) {
-      var fp = re.exec(w);
-      stem = fp[1];
-      re = re_mgr1;
-      re2 = re_meq1;
-      re3 = re3_5;
-      if (re.test(stem) || (re2.test(stem) && !(re3.test(stem)))) {
-        w = stem;
-      }
-    }
-
-    re = re_5_1;
-    re2 = re_mgr1;
-    if (re.test(w) && re2.test(w)) {
-      re = re_1b_2;
-      w = w.replace(re,"");
-    }
-
-    // and turn initial Y back to y
-
-    if (firstch == "y") {
-      w = firstch.toLowerCase() + w.substr(1);
-    }
-
-    return w;
-  };
-
-  return porterStemmer;
+		return word.toLowerCase();
+	};
 })();
 
-lunr.Pipeline.registerFunction(lunr.stemmer, 'stemmer')
+/**
+ * lunr.stemmerFr is a french language stemmer, a Javascript Porter algorithm implementation
+ * taken from https://github.com/zyklus/stem/
+ *
+ * @module
+ * @param {String} the word to stem
+ * @return {String} the stemmed word
+ * @see lunr.Pipeline
+ */
+lunr.stemmerFr = (function() {
+	function ifIn(ix, word, sfx, ifTrue, ifFalse) {
+		var toExec = [].concat((word.substr(ix).substr(-sfx.length) === sfx) ? ifTrue || [] : ifFalse || []);
+
+		for (var i = 0, l = toExec.length; i < l; i++) {
+			if (typeof(toExec[i]) == 'function') {
+				word = toExec[i](word);
+			} else {
+				word = word.substr(0, word.length - sfx.length) + (toExec[i] === 'delete' ? '' : toExec[i]);
+			}
+		}
+
+		return word;
+	}
+
+	return function(word) {
+		var eRx = ['', ''];
+
+		word = word.toLowerCase();
+
+		// Contracted and prefixed articles c'|d'|j'|l'|m'|n'|s'|t'
+		word = word.replace(/^((?:c|d|j|l|m|n|s|t)')/, '');
+
+		word = word.replace(/[^a-zâàçëéêèïîôûùü]/g, '')
+			.replace(/([aeiouyâàëéêèïîôûù])y|y([aeiouyâàëéêèïîôûù])/g, '$1Y$2')
+			.replace(/([aeiouyâàëéêèïîôûù])u([aeiouyâàëéêèïîôûù])/g, '$1U$2')
+			.replace(/qu/g, 'qU')
+			.replace(/([aeiouyâàëéêèïîôûù])i([aeiouyâàëéêèïîôûùq])/g, '$1I$2');
+
+		// Contracted and prefixed articles c'|d'|j'|l'|m'|n'|s'|t'
+		word = word.replace(/^((?:c|d|j|l|m|n|s|t)')/, '');
+
+		var RV = /^(par|col|tap)/.test(word) || /^[aeiouyâàëéêèïîôûù][aeiouyâàëéêèïîôûù]/.test(word) ? 3 : ((/[aeiouyâàëéêèïîôûù]/.exec(' ' + word.substr(1)) || eRx).index || 1000) + 1;
+
+		var R1 = ((/[aeiouyâàëéêèïîôûù][^aeiouyâàëéêèïîôûù]/.exec(' ' + word) || eRx).index || 1000) + 1,
+			R2 = (((/[aeiouyâàëéêèïîôûù][^aeiouyâàëéêèïîôûù]/.exec(' ' + word.substr(R1)) || eRx).index || 1000)) + R1 + 1,
+			doS2 = false,
+			changed,
+			oWord,
+			res;
+
+		// step 1
+		oWord = word;
+		var sfx = /(?:(ances?|iqUes?|ismes?|ables?|istes?|eux)|(at(?:rice|eur|ion)s?)|(logies?)|(u[st]ions?)|(ences?)|(ements?)|(ités?)|(ifs?|ives?)|(eaux)|(aux)|(euses?)|(issements?)|(amment)|(emment)|(ments?))$/.exec(word) || eRx;
+
+		// ance|iqUe|isme|able|iste|eux|ances|iqUes|ismes|ables|istes
+		if (sfx[1]) {
+			word = ifIn(R2, word, sfx[1], 'delete');
+
+			// atrice|ateur|ation|atrices|ateurs|ations
+		} else if (sfx[2]) {
+			word = ifIn(R2, word, sfx[2], ['delete', function(word) {
+				if (/ic$/.test(word)) {
+					return ifIn(R2, word, 'ic', 'delete', 'iqU');
+				}
+				return word;
+			}]);
+
+			// logie|logies
+		} else if (sfx[3]) {
+			word = ifIn(R2, word, sfx[3], 'log');
+
+			// usion|ution|usions|utions
+		} else if (sfx[4]) {
+			word = ifIn(R2, word, sfx[4], 'u');
+
+			// ence|ences
+		} else if (sfx[5]) {
+			word = ifIn(R2, word, sfx[5], 'ent');
+
+			// ement|ements
+		} else if (sfx[6]) {
+			word = ifIn(RV, word, sfx[6], ['delete', function(word) {
+				return /ativ$/.test(word.substr(R2)) ? ifIn(R2, word, 'ativ', 'delete') : /iv$/.test(word) ? ifIn(R2, word, 'iv', 'delete') : /eus$/.test(word) ? ifIn(R2, word, 'eus', 'delete', function(word) {
+					return ifIn(R1, word, 'eus', 'eux');
+				}) : (res = /(abl|iqU)$/.exec(word)) ? ifIn(R2, word, res[1], 'delete') : (res = /(ièr|Ièr)$/.exec(word)) ? ifIn(RV, word, res[1], 'i') : word;
+			}]);
+
+			// ité|ités
+		} else if (sfx[7]) {
+			word = ifIn(R2, word, sfx[7], ['delete', function(word) {
+				return (/abil$/.test(word) ? ifIn(R2, word, 'abil', 'delete', 'abl') : /ic$/.test(word) ? ifIn(R2, word, 'ic', 'delete', 'iqU') : /iv$/.test(word) ? ifIn(R2, word, 'iv', 'delete') : word);
+			}]);
+
+			// if|ive|ifs|ives
+		} else if (sfx[8]) {
+			word = ifIn(R2, word, sfx[8], ['delete', function(word) {
+				return (/at$/.test(word) ? ifIn(R2, word, 'at', ['delete', function(word) {
+					return (/ic$/.test(word) ? ifIn(R2, word, 'ic', 'delete', 'iqU') : word);
+				}]) : word);
+			}]);
+
+			// eaux
+		} else if (sfx[9]) {
+			word = word.replace(/eaux$/, 'eau');
+
+			// aux
+		} else if (sfx[10]) {
+			word = ifIn(R1, word, 'aux', 'al');
+
+			// euse|euses
+		} else if (sfx[11]) {
+			word = ifIn(R2, word, sfx[11], 'delete', function(word) {
+				return ifIn(R1, word, sfx[11], 'eux');
+			});
+
+			// issement|issements
+		} else if (sfx[12]) {
+			if (/[^aeiouyâàëéêèïîôûù](issements?)$/.test(word)) {
+				word = ifIn(R1, word, sfx[12], 'delete');
+			}
+
+			// amment
+		} else if (sfx[13]) {
+			word = ifIn(RV, word, sfx[13], 'ant');
+			doS2 = true;
+
+			// emment
+		} else if (sfx[14]) {
+			word = ifIn(RV, word, sfx[14], 'ent');
+			doS2 = true;
+
+			// ment|ments
+		} else if (sfx[15]) {
+			if (/[aeiouyâàëéêèïîôûù]ments?$/.test(word.substr(RV))) {
+				word = word.substr(0, word.length - sfx[15].length);
+			}
+			doS2 = true;
+		}
+		changed = (word !== oWord);
+		if (!changed) {
+			doS2 = true;
+		}
+
+		// step 2a
+		if (doS2) {
+			oWord = word;
+			var res = /[^aeiouyâàëéêèïîôûù](îmes|ît|îtes|ie?s?|ira?|iraIent|irai[st]?|iras|irent|iri?ez|iri?ons|iront|issaIent|issai[st]|issante?s?|isses?|issent|issi?ez|issi?ons|it)$/.exec(word.substr(RV));
+			if (res) {
+				word = word.substr(0, word.length - res[1].length);
+				doS2 = false;
+			}
+			changed = (word !== oWord);
+		}
+
+		// step 2b
+		if (doS2) {
+			oWord = word;
+			var res = (/(?:(ions)|(ée?s?|èrent|era?|eraIent|erai[st]?|eras|eri?ez|eri?ons|eront|i?ez)|(â[mt]es|ât|ai?s?|aIent|ait|ante?s?|asse|assent|asses|assiez|assions))$/.exec(word.substr(RV)) || eRx);
+
+			// ions
+			if (res[1]) {
+				word = ifIn(R2, word, res[1], 'delete');
+
+				// é|ée|ées|és|èrent|er|era|erai|eraIent|erais|erait|eras|erez|eriez|erions|erons|eront|ez|iez
+			} else if (res[2]) {
+				word = word.substr(0, word.length - res[2].length);
+
+				// âmes|ât|âtes|a|ai|aIent|ais|ait|ant|ante|antes|ants|as|asse|assent|asses|assiez|assions
+			} else if (res[3]) {
+				word = word.substr(0, word.length - res[3].length);
+				if (/e$/.test(word.substr(RV))) {
+					word = word.substr(0, word.length - 1);
+				}
+			}
+			changed = (word !== oWord);
+		}
+
+		// step 3
+		if (changed) {
+			if (/Y$/.test(word)) {
+				word = word.substr(0, word.length - 1) + 'i';
+			} else if (/ç$/.test(word)) {
+				word = word.substr(0, word.length - 1) + 'c';
+			}
+
+			// step 4
+		} else {
+			if (/[^aiouès]s$/.test(word)) {
+				word = word.substr(0, word.length - 1);
+			}
+
+			res = (/(?:[st](ion)|(ier|ière|Ier|Ière)|(e)|gu(ë))$/.exec(word.substr(RV)) || eRx);
+
+			// ion
+			if (res[1]) {
+				word = ifIn(R2, word, 'ion', 'delete');
+
+				// ier|ière|Ier|Ière
+			} else if (res[2]) {
+				word = word.substr(0, word.length - res[2].length) + 'i';
+
+				// e
+				// ë
+			} else if (res[3] || res[4]) {
+				word = word.substr(0, word.length - 1);
+			}
+		}
+
+		// step 5
+		if (/(enn|onn|ett|ell|eill)$/.test(word)) {
+			word = word.substr(0, word.length - 1);
+		}
+
+		// step 6
+		if (res = /[é|è]([^aeiouyâàëéêèïîôûù]+)$/.exec(word)) {
+			word = word.substr(0, word.length - res[0].length) + 'e' + res[1];
+		}
+
+		return word.toLowerCase();
+	};
+})();
+
+/**
+ * lunr.stemmerDe is a german language stemmer, a Javascript Porter algorithm implementation
+ * taken from https://github.com/zyklus/stem/
+ *
+ * @module
+ * @param {String} the word to stem
+ * @return {String} the stemmed word
+ * @see lunr.Pipeline
+ */
+lunr.stemmerDe = (function() {
+	return function(word) {
+		var eRx = ['', ''];
+
+		word = word.toLowerCase().replace(/ß/g, 'ss').replace(/[^a-zäöüéç]/g, '').replace(/([aeiouyäöü])u([aeiouyäöü])/g, '$1U$2').replace(/([aeiouyäöü])y([aeiouyäöü])/g, '$1Y$2');
+
+		var res,
+			R1 = ((/[aeiouyäöü][^aeiouyäöü]/.exec(' ' + word) || eRx).index || 1000) + 1,
+			R2 = (((/[aeiouyäöü][^aeiouyäöü]/.exec(' ' + word.substr(R1)) || eRx).index || 1000)) + R1 + 1;
+
+		R1 = Math.max(3, R1);
+
+
+		// step 1
+		var sfx = /(ern|em|er|(en|es|e)|[bdfghklmnrt](s))$/.exec(word);
+		if (sfx) {
+			var g2 = !!sfx[2];
+			sfx = sfx[3] || sfx[2] || sfx[1];
+			if (word.indexOf(sfx, R1) >= 0) {
+				word = word.substr(0, word.length - sfx.length);
+				if (g2 && /niss$/.test(word)) {
+					word = word.substr(0, word.length - 1);
+				}
+			}
+		}
+
+
+		// step 2
+		var res, ending;
+		if (res = /(est|en|er)$/.exec(word)) {
+			ending = res[1];
+		} else if (/...[bdfghklmnt]st$/.test(word)) {
+			ending = 'st';
+		}
+		if (ending && (word.indexOf(ending, R1) >= 0)) {
+			word = word.substr(0, word.length - ending.length);
+		}
+
+
+		// step 3
+		var res;
+		if (res = /(end|ung)$/.exec(word)) {
+			if (word.indexOf(res[1], R2) >= 0) {
+				word = word.substr(0, word.length - res[1].length);
+				if (/[^e]ig$/.test(word) && /ig$/.test(word.substr(R2))) {
+					word = word.substr(0, word.length - 2);
+				}
+			}
+		} else if (res = /(isch|ig|ik)$/.exec(word)) {
+			if (/[^e](isch|ig|ik)$/.test(word) && /(isch|ig|ik)$/.test(word.substr(R2))) {
+				word = word.substr(0, word.length - res[1].length);
+			}
+		} else if (res = /(lich|heit)$/.exec(word)) {
+			if (word.indexOf(res[1], R2) >= 0) {
+				word = word.substr(0, word.length - res[1].length);
+				if (/(er|en)$/.test(word.substr(R1))) {
+					word = word.substr(0, word.length - 2);
+				}
+			}
+		} else if (res = /(keit)$/.exec(word)) {
+			if (word.indexOf(res[1], R2) >= 0) {
+				word = word.substr(0, word.length - res[1].length);
+				if ((res = /(lich|ig)$/.exec(word)) && /(lich|ig)$/.test(word.substr(R2))) {
+					word = word.substr(0, word.length - res[1].length);
+				}
+			}
+		}
+
+		word = word.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u');
+
+		return word;
+	};
+})();
+
+/**
+ * lunr.stemmer is a multi-language language stemmer.
+ *
+ * Current supported languages are english, french and german.
+ *
+ * @param  {String} token  The word to stem
+ * @param  {Number} i      Index of the word in the sentence
+ * @param  {Array} tokens Array of words in the sentence
+ * @param  {String} lg     Language of the sentence
+ * @return {String}        The stemmed word
+ */
+lunr.stemmer = function(token, i, tokens, lg) {
+	lg = ['en', 'fr', 'de'].indexOf(lg) > -1 ? lg : 'en';
+	var stemmers = {
+		en: lunr.stemmerEn,
+		fr: lunr.stemmerFr,
+		de: lunr.stemmerDe
+	};
+	return stemmers[lg](token);
+};
+
+lunr.Pipeline.registerFunction(lunr.stemmer, 'stemmer');
 /*!
  * lunr.stopWordFilter
  * Copyright (C) 2016 Oliver Nightingale
@@ -1660,19 +1981,19 @@ lunr.Pipeline.registerFunction(lunr.stemmer, 'stemmer')
  * @see lunr.Pipeline
  * @see lunr.stopWordFilter
  */
-lunr.generateStopWordFilter = function (stopWords) {
-  var words = stopWords.reduce(function (memo, stopWord) {
-    memo[stopWord] = stopWord
-    return memo
-  }, {})
+lunr.generateStopWordFilter = function(stopWords) {
+	var words = stopWords.reduce(function(memo, stopWord) {
+		memo[stopWord] = stopWord;
+		return memo;
+	}, {});
 
-  return function (token) {
-    if (token && words[token] !== token) return token
-  }
-}
+	return function(token) {
+		if (token && words[token] !== token) return token;
+	};
+};
 
 /**
- * lunr.stopWordFilter is an English language stop word list filter, any words
+ * lunr.stopWordFilterEn is an English language stop word list filter, any words
  * contained in the list will not be passed through the filter.
  *
  * This is intended to be used in the Pipeline. If the token does not pass the
@@ -1683,129 +2004,64 @@ lunr.generateStopWordFilter = function (stopWords) {
  * @returns {String}
  * @see lunr.Pipeline
  */
-lunr.stopWordFilter = lunr.generateStopWordFilter([
-  'a',
-  'able',
-  'about',
-  'across',
-  'after',
-  'all',
-  'almost',
-  'also',
-  'am',
-  'among',
-  'an',
-  'and',
-  'any',
-  'are',
-  'as',
-  'at',
-  'be',
-  'because',
-  'been',
-  'but',
-  'by',
-  'can',
-  'cannot',
-  'could',
-  'dear',
-  'did',
-  'do',
-  'does',
-  'either',
-  'else',
-  'ever',
-  'every',
-  'for',
-  'from',
-  'get',
-  'got',
-  'had',
-  'has',
-  'have',
-  'he',
-  'her',
-  'hers',
-  'him',
-  'his',
-  'how',
-  'however',
-  'i',
-  'if',
-  'in',
-  'into',
-  'is',
-  'it',
-  'its',
-  'just',
-  'least',
-  'let',
-  'like',
-  'likely',
-  'may',
-  'me',
-  'might',
-  'most',
-  'must',
-  'my',
-  'neither',
-  'no',
-  'nor',
-  'not',
-  'of',
-  'off',
-  'often',
-  'on',
-  'only',
-  'or',
-  'other',
-  'our',
-  'own',
-  'rather',
-  'said',
-  'say',
-  'says',
-  'she',
-  'should',
-  'since',
-  'so',
-  'some',
-  'than',
-  'that',
-  'the',
-  'their',
-  'them',
-  'then',
-  'there',
-  'these',
-  'they',
-  'this',
-  'tis',
-  'to',
-  'too',
-  'twas',
-  'us',
-  'wants',
-  'was',
-  'we',
-  'were',
-  'what',
-  'when',
-  'where',
-  'which',
-  'while',
-  'who',
-  'whom',
-  'why',
-  'will',
-  'with',
-  'would',
-  'yet',
-  'you',
-  'your'
-])
+lunr.stopWordFilterEn = lunr.generateStopWordFilter(['a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren\'t', 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 'can\'t', 'cannot', 'could', 'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during', 'each', 'few', 'for', 'from', 'further', 'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d', 'he\'ll', 'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s', 'i', 'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'isn\'t', 'it', 'it\'s', 'its', 'itself', 'let\'s', 'me', 'more', 'most', 'mustn\'t', 'my', 'myself', 'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 'same', 'shan\'t', 'she', 'she\'d', 'she\'ll', 'she\'s', 'should', 'shouldn\'t', 'so', 'some', 'such', 'than', 'that', 'that\'s', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasn\'t', 'we', 'we\'d', 'we\'ll', 'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'when', 'when\'s', 'where', 'where\'s', 'which', 'while', 'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t', 'you', 'you\'d', 'you\'ll', 'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves']);
 
-lunr.Pipeline.registerFunction(lunr.stopWordFilter, 'stopWordFilter')
+/**
+ * lunr.stopWordFilterFr is a French language stop word list filter, any words
+ * contained in the list will not be passed through the filter.
+ *
+ * This is intended to be used in the Pipeline. If the token does not pass the
+ * filter then undefined will be returned.
+ *
+ * @module
+ * @param {String} token The token to pass through the filter
+ * @returns {String}
+ * @see lunr.Pipeline
+ */
+lunr.stopWordFilterFr = lunr.generateStopWordFilter(['alors', 'au', 'aucuns', 'aussi', 'autre', 'avant', 'ave', 'avoir', 'bon', 'car', 'ce', 'cela', 'ces', 'ceux', 'chaque', 'ci', 'comme', 'comment', 'd', 'des', 'du', 'dedans', 'dehors', 'depuis', 'deux', 'devrait', 'doit', 'donc', 'dos', 'droite', 'début', 'elle', 'elles', 'en', 'encore', 'essai', 'est', 'et', 'eu', 'fait', 'faites', 'fois', 'font', 'force', 'haut', 'hors', 'ici', 'il', 'ils', 'je', 'juste', 'la', 'le', 'les', 'leur', 'là', 'ma', 'maintenant', 'mais', 'mes', 'mine', 'moins', 'mon', 'mot', 'même', 'ni', 'nommés', 'notre', 'nous', 'nouveaux', 'ou', 'où', 'par', 'parce', 'parole', 'pas', 'personnes', 'peut', 'peu', 'pièce', 'plupart', 'pour', 'pourquoi', 'quand', 'que', 'quel', 'quelle', 'quelles', 'quels', 'qui', 'sa', 'sans', 'ses', 'seulement', 'si', 'sien', 'son', 'sont', 'sous', 'soyez', 'sujet', 'sur', 'ta', 'tandis', 'tellement', 'tels', 'tes', 'ton', 'tous', 'tout', 'trop', 'très', 'tu', 'valeur', 'voie', 'voient', 'vont', 'votre', 'vous', 'vu', 'ça', 'étaient', 'état', 'étions', 'été', 'être']);
+
+/**
+ * lunr.stopWordFilterDe is a German language stop word list filter, any words
+ * contained in the list will not be passed through the filter.
+ *
+ * This is intended to be used in the Pipeline. If the token does not pass the
+ * filter then undefined will be returned.
+ *
+ * @module
+ * @param {String} token The token to pass through the filter
+ * @returns {String}
+ * @see lunr.Pipeline
+ */
+lunr.stopWordFilterDe = lunr.generateStopWordFilter(['aber', 'als', 'am', 'an', 'auch', 'auf', 'aus', 'bei', 'bin', 'bis', 'bist', 'da', 'dadurch', 'daher', 'darum', 'das', 'daß', 'dass', 'dein', 'deine', 'dem', 'den', 'der', 'des', 'dessen', 'deshalb', 'die', 'dies', 'dieser', 'dieses', 'doch', 'dort', 'du', 'durch', 'ein', 'eine', 'einem', 'einen', 'einer', 'eines', 'er', 'es', 'euer', 'eure', 'für', 'hatte', 'hatten', 'hattest', 'hattet', 'hier', 'hinter', 'ich', 'ihr', 'ihre', 'im', 'in', 'ist', 'ja', 'jede', 'jedem', 'jeden', 'jeder', 'jedes', 'jener', 'jenes', 'jetzt', 'kann', 'kannst', 'können', 'könnt', 'machen', 'mein', 'meine', 'mit', 'muß', 'mußt', 'musst', 'müssen', 'müßt', 'nach', 'nachdem', 'nein', 'nicht', 'nun', 'oder', 'seid', 'sein', 'seine', 'sich', 'sie', 'sind', 'soll', 'sollen', 'sollst', 'sollt', 'sonst', 'soweit', 'sowie', 'und', 'unser', 'unsere', 'unter', 'vom', 'von', 'vor', 'wann', 'warum', 'was', 'weiter', 'weitere', 'wenn', 'wer', 'werde', 'werden', 'werdet', 'weshalb', 'wie', 'wieder', 'wieso', 'wir', 'wird', 'wirst', 'wo', 'woher', 'wohin', 'zu', 'zum', 'zur', 'über']);
+
+/**
+ * lunr.stopWordFilter is a multi-language stop word list filter, any words
+ * contained in the list will not be passed through the filter.
+ *
+ * It currently supports English, French and German languages.
+ *
+ * This is intended to be used in the Pipeline. If the token does not pass the
+ * filter then undefined will be returned.
+ *
+ * @module
+ * @param  {String} token  The word to tokenize
+ * @param  {Number} i      Index of the word in the sentence
+ * @param  {Array} tokens Array of words in the sentence
+ * @param  {String} lg     Language of the sentence
+ * @return {String}        The word, or undefined if it is a stop word for the language
+ * @see lunr.Pipeline
+ */
+lunr.stopWordFilter = function(token, i, tokens, lg) {
+	lg = ['en', 'fr', 'de'].indexOf(lg) > -1 ? lg : 'en';
+	var stopWordFilters = {
+		en: lunr.stopWordFilterEn,
+		fr: lunr.stopWordFilterFr,
+		de: lunr.stopWordFilterDe
+	};
+	return stopWordFilters[lg](token);
+};
+
+lunr.Pipeline.registerFunction(lunr.stopWordFilter, 'stopWordFilter');
 /*!
  * lunr.trimmer
  * Copyright (C) 2016 Oliver Nightingale
